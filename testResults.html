@@ -321,7 +321,7 @@
             let testButton = document.createElement('button');
             testButton.type = 'button';
             testButton.innerText = 'Get Weather';
-            testButton.classList.add('btn', 'btn-primary', 'w-50'); // style with bootstrap
+            testButton.classList.add('btn', 'btn-primary', 'w-25'); // style with bootstrap
             testButton.onclick = () => test.run(testInput.value.trim()); // add the ability to pass in a zip or a city to run
 
             let br = document.createElement('br');
@@ -329,7 +329,7 @@
             let testInput = document.createElement('input'); // added the input element from the user
             testInput.placeholder = 'City or Zipcode' // a little instruction for the suer
             testInput.value = 'Brentwood, TN' // default value as requirements
-            testInput.classList.add('form-control', 'mb-2', 'w-50', 'mx-auto'); // style with bootstrap
+            testInput.classList.add('form-control', 'mb-2', 'w-25', 'mx-auto'); // style with bootstrap
 
             context.appendChild(testInput);
             context.appendChild(testButton);

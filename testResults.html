@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+    <title>FreightWise Programming Test</title>
+
+    <script>
+        'use strict';
+
+        class Test {
+
+            constructor() {
+                this.testResults = document.getElementsByClassName('test-results')[0]; // needed to access the first element array
+            }
+
+            async run(cityOrZip) {
+                console.log(new Date().toISOString(), '[Test]', 'Running the test');
+                console.log(cityOrZip)
+
+                // TODO: Make the API call and handle the results
+                const weatherConfig = new OpenWeatherMapConfig(); // get the config
+                const api = new WeatherApi(weatherConfig.url, weatherConfig.myApiKey); // pass the config settings to the api class
+                
+                api.fetchWeatherByLocation(cityOrZip) // call the api with a promise to set the results or show error
+                    .then(resp => {
+                        this.setResults(api.parseData(resp.data));
+                    })
+                    .catch(error => {
+                        this.setError(error.message);
+                    });
+            }
+
+            setError(message) {
+                // TODO: Format the error
+                // this.testResults.innerHTML = (message || '').toString();
+
+                // building the DOM 
+                const container = document.createElement('div'); // make a div to hold the container
+                container.classList.add('container');
+
+                const rows = { errorRow: this.createRow() } // add to the row array
+                const card = this.createCard('Error', message); // create the card
+                card.classList.add('text-danger'); // change the boostrap style to red
+
+                rows.errorRow.appendChild(card); // add the card to the row
+                container.appendChild(rows.errorRow); // add the row to the container
+
+                this.testResults.appendChild(container); // add the container of the cards to the test result div
+            }
+
+            setResults(results) {
+                // TODO: Format the results
+                // this.testResults.innerHTML = (results || '').toString();
+
+                // build out the header for the results
+                const title = document.createElement('h2');
+                title.textContent = 'FreightWise Weather';
+                title.classList.add('mb-4', 'text-center');
+                this.testResults.appendChild(title);
+
+                // make the div for the container to hold all of the rows and cards for the result data
+                const container = document.createElement('div');
+                container.classList.add('container');
+
+                // these rows will appear in the container with a variable number of cards
+                const rows = {
+                    locationRow: this.createRow(),
+                    weatherRow: this.createRow(),
+                    temperatureRow: this.createRow(),
+                    windRow: this.createRow(),
+                    daylightRow: this.createRow()
+                };
+
+                // build out each of the data field lables and their values from the parsed data results
+                // the order added will be what is displayed in the following logic
+                const fields = [
+                    
+                    { label: 'Location', value: results.location }
+
+                    ,{ label: 'Weather', value: results.weather.join(', ') }
+                    ,{ label: 'Cloudiness', value: results.clouds }
+                    ,{ label: 'Wind Speed', value: results.windSpeed }
+                    // ,{ label: 'Wind Gust', value: results.windGust }
+
+                    ,{ label: 'Temperature', value: results.temperature }
+                    ,{ label: 'Feels Like', value: results.feelsLike }
+                    ,{ label: 'Humidity', value: results.humidity }
+                    
+                    ,{ label: 'Sunrise', value: results.sunrise }
+                    ,{ label: 'Sunset', value: results.sunset }
+
+                    // ,{ label: 'Pressure', value: results.pressure }
+                    // ,{ label: 'GMT Timezone Difference', value: results.timezoneDiff }
+                    // ,{ label: 'Coordinates', value: results.coordinates }
+                ];
+
+                // spin through all of the fields just added, and group them into their row
+                // this can be easily moved around, this pretty much sets up how many cards/cols are in a row
+                fields.forEach(field => {
+                    const card = this.createCard(field.label, field.value);
+                    if (card instanceof Node) {
+                        switch (field.label) {
+                            case 'Location':
+                                rows.locationRow.appendChild(card);
+                                break;
+                            case 'Weather':
+                            case 'Cloudiness':
+                            case 'Wind Speed':
+                                rows.weatherRow.appendChild(card);
+                                break;
+                            case 'Temperature':
+                            case 'Feels Like':
+                            case 'Humidity':
+                                rows.temperatureRow.appendChild(card);
+                                break;
+                            case 'Sunrise':
+                            case 'Sunset':
+                                rows.daylightRow.appendChild(card);
+                                break;
+                        } 
+                    } else {
+                        console.error('card is not valid:', card);
+                    }
+
+                });
+
+                // need to go throw all the rows and add them into the container
+                // this is easy to add more rows, but do not have much control of the order of which row, that is set above in the flow
+                Object.values(rows).forEach(row => {
+                    if (row instanceof Node) {
+                        container.appendChild(row);
+                    } else {
+                        console.error('row is not valid:', row);
+                    }
+                });
+
+
+                // add the container with all the data to the rest result div
+                this.testResults.appendChild(container);
+            }
+
+            // function to create a new div row
+            createRow() {
+                const row = document.createElement('div');
+                row.classList.add('row', 'mb-4');
+                return row;
+            };
+
+            // function to build out how each of the card data will look
+            // lots of boot strap in here for formatting
+            createCard(label, value) {
+                const col = document.createElement('div');
+                col.classList.add('col');
+
+                const card = document.createElement('div');
+                card.classList.add('card', 'p-3', 'text-center');
+
+                const textBlock = document.createElement('p');
+                textBlock.classList.add('mb-2');
+
+                const labelText = document.createElement('strong');
+                labelText.textContent = `${label}: `;
+
+                const br = document.createElement('br'); 
+                const valueText = document.createTextNode(value);
+
+                // layout of the card after building all the object models above
+                textBlock.appendChild(labelText);
+                textBlock.appendChild(br);
+                textBlock.appendChild(valueText);
+                card.appendChild(textBlock);
+
+                // return the column with the card
+                col.appendChild(card);
+                return col;
+            };
+        }
+
+        // Config for the weather api to keep all the details in one location
+        class OpenWeatherMapConfig {
+            // https://api.openweathermap.org/data/2.5/weather?q=London&appid={API key} // example url
+            url = `https://api.openweathermap.org/data/2.5/weather`;
+            apiKey = `25e989bd41e3e24ce13173d8126e0fd6`; // this code doesn't work 
+            myApiKey = `37fa444d202ece5cba0f1c41b4da2518`; // so I had to make a new one
+        }
+        
+        // this is the api class
+        // constructor takes the url and an api key
+        // 3 methods to handle data from api
+        //      fetchWeatherByLocation - this is what calls the OpenWeatherMap api passing in the location, parm can be a zip or a city, or city/state, or city/state/country
+        //      getFormattedLocation - this method helps to break out the needed formatting the api needs to use a city with a state and country codes
+        //      parseData - this method breaks out the return data from the api into a json easily to be used when building to the dom         
+        class WeatherApi {
+            constructor(url, apiKey) {
+                this.url = url;
+                this.apiKey = apiKey;
+            }
+
+            fetchWeatherByLocation(location) {
+
+                const isZipCode = (str) => /^\d{5}(-\d{4})?$/.test(str); // inline method for a regular expression to check if handed a zip code
+                const locationParm = isZipCode(location) ? 'zip' : 'q'; // this is to set up the query parm types
+                // q is for city/state/country while zip is for zipcodes
+
+                // build the dynamic API url to be called
+                const query = `${this.url}?${locationParm}=${this.getFormattedLocation(location)}&appid=${this.apiKey}`;
+                console.log(query)
+
+                // api call with a promise
+                return axios.get(query)
+                    .then(response => {
+                        return response;
+                    })
+                    .catch(error => {
+                        throw error;
+                    });
+                }
+
+            getFormattedLocation(location) {
+                // need to check if we only have a city, or a combination of city/state, or a combination of a city/state/country
+                // this is a bit tricky due to the api needing a country code if a state is passed
+                const locationParts = location.split(',').map(part => part.trim());
+                let formattedLocation;
+                if (locationParts.length === 3) {
+                    formattedLocation = `${locationParts[0]},${locationParts[1]},${locationParts[2]}`;
+                } else if (locationParts.length === 2) {
+                    formattedLocation = `${locationParts[0]},${locationParts[1]},US`;
+                } else {
+                    formattedLocation = locationParts[0];
+                }
+                return formattedLocation;
+            }
+
+            parseData(data) {
+                
+                // break out the first level json returned from the api
+                const { 
+                    coord, 
+                    weather, 
+                    main, 
+                    wind, 
+                    clouds, 
+                    sys, 
+                    name, 
+                    timezone 
+                } = data;
+
+               
+                // pull out the nested data values and format into easy to use values to prep for DOM building
+                // this took a little research, but most of this is strait forward like the kelvin conversions and the epoch time values
+                const kelvinToCelsius = (k) => Math.round(k - 273.15);
+                const kelvinToFahrenheit = (k) => Math.round((k - 273.15) * 9/5 + 32);
+                const formattedData = {
+                    location: `${name}, ${sys.country}`,
+                    coordinates: `${coord.lon}, ${coord.lat}`,
+                    weather: weather.map(w => `${w.main} (${w.description})`),
+                    temperature: `${kelvinToCelsius(main.temp)}°C / ${kelvinToFahrenheit(main.temp)}°F`,
+                    feelsLike: `${kelvinToCelsius(main.feels_like)}°C / ${kelvinToFahrenheit(main.feels_like)}°F`,
+                    pressure: `${main.pressure}`,
+                    humidity: `${main.humidity}%`,
+                    windSpeed: `${wind.speed} m/s`,
+                    windGust: `${wind.gust} m/s`,
+                    clouds: `${clouds.all}%`,
+                    sunrise: `${new Date(sys.sunrise * 1000).toLocaleTimeString()}`,
+                    sunset: `${new Date(sys.sunset * 1000).toLocaleTimeString()}`,
+                    timezoneDiff: `${timezone / 3600}`
+                };
+
+                return formattedData;
+            }
+        }
+    </script>
+
+    <style>
+        .button-container {
+            text-align: center;
+        }
+
+        .button-container > button {
+            margin: 0;
+            padding: 10px 18px;
+            color: white;
+            background-color: #008000;
+            border: none;
+            border-radius: 3px;
+            transition: all 200ms ease-in-out;
+            font-size: 14px;
+        }
+
+        .button-container > button:hover {
+            background-color: #00A000;
+        }
+
+        .button-container > button:active {
+            background-color: #006000;
+        }
+    </style>
+
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+</head>
+<body>
+    <div class="test-results"></div>
+
+    <div class="button-container"></div>
+
+    <script>
+        'use strict';
+
+        /**
+         * Creates a button for kicking off the test and adds it to the DOM.
+         *
+         * @param {HTMLElement} context  the parent element to add the button to
+         * @param {Test}        test     the test to be executed
+         * @returns {HTMLElement} the button added to the test
+         */
+        function addButtonForTest(context, test) {
+            
+            let testButton = document.createElement('button');
+            testButton.type = 'button';
+            testButton.innerText = 'Get Weather';
+            testButton.classList.add('btn', 'btn-primary', 'w-50'); // style with bootstrap
+            testButton.onclick = () => test.run(testInput.value.trim()); // add the ability to pass in a zip or a city to run
+
+            let br = document.createElement('br');
+
+            let testInput = document.createElement('input'); // added the input element from the user
+            testInput.placeholder = 'City or Zipcode' // a little instruction for the suer
+            testInput.value = 'Brentwood, TN' // default value as requirements
+            testInput.classList.add('form-control', 'mb-2', 'w-50', 'mx-auto'); // style with bootstrap
+
+            context.appendChild(testInput);
+            context.appendChild(testButton);
+
+            return testButton;
+        }
+
+        // Create the Test and add a button to the UI for running the test
+        const test = new Test();
+        const buttonContainer = document.getElementsByClassName('button-container')[0];
+
+        addButtonForTest(buttonContainer, test);
+    </script>
+</body>
+</html>
